@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asesmen Sumatif PJOK Kelas 10 - MA Mu'allimin NU</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <div id="app" class="flex-grow flex flex-col">
+        <!-- Dynamic views will be rendered here -->
+    </div>
+
+    <div id="customModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all scale-95 opacity-0 duration-300" id="modalBox">
+            <div class="flex items-center space-x-3 mb-4">
+                <div id="modalIconContainer" class="w-12 h-12 rounded-full flex items-center justify-center text-xl bg-blue-100 text-blue-600">
+                    <i id="modalIcon" class="fas fa-info-circle"></i>
+                </div>
+                <div>
+                    <h3 id="modalTitle" class="text-lg font-bold text-slate-900">Pemberitahuan</h3>
+                    <p class="text-xs text-slate-500">MA Mu'allimin NU System</p>
+                </div>
+            </div>
+            <p id="modalMessage" class="text-slate-600 text-sm mb-6 leading-relaxed">Pesan sistem...</p>
+            <div class="flex justify-end space-x-3" id="modalActions">
+                <button id="modalBtnOk" onclick="closeModal()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-all">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const DEFAULT_ADMIN = {
+            username: 'admin',
+            password: 'password123'
+        };
+
+        const APP_CONFIG_KEY = 'pjok_app_config_v1';
+        const QUESTIONS_KEY = 'pjok_questions_v1';
+        const RESULTS_KEY = 'pjok_results_v1';
+        const SESSION_KEY = 'pjok_session_v1';
+
+        // Default Config
+        let appConfig = JSON.parse(localStorage.getItem(APP_CONFIG_KEY)) || {
+            schoolName: "MA Mu'allimin NU",
+            author: "Annas Thozin",
+            subject: "Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)",
+            grade: "Kelas 10",
+            durationMinutes: 90,
+            kkm: 78,
+            logoUrl: ""
+        };
+
+        // 40 Default Questions (20 MC, 10 T/F, 10 Matching)
+        const defaultQuestions = [
+            // --- PILIHAN GANDA (1 - 20) ---
+            {
+                id: 1, type: 'mc',
+                text: "Saat melakukan serangan balik cepat (fast break) dalam permainan bola basket, seorang penyerang mendapati dua pemain bertahan lawan berada di depannya di area ring. Gerakan kombinasi dribble dan passing yang paling efektif untuk melewati pertahanan tersebut tanpa melanggar aturan traveling adalah...",
+                options: { A: "Melakukan crossover dribble tajam dilanjutkan dengan jump shot dari luar garis tiga angka", B: "Menggunakan kecepatan penuh menembus dua pemain bertahan dengan double dribble", C: "Melakukan change of pace, crossover, kemudian melakukan bounce pass akurat kepada rekan yang datang dari lini kedua", D: "Berhenti mendadak dan melakukan pivot 360 derajat sebelum melempar bola ke papan ring" },
+                answer: "C"
+            },
+            {
+                id: 2, type: 'mc',
+                text: "Dalam pertandingan sepak bola tingkat kompetitif, tim Anda menerapkan formasi bertahan zona (zone defense) saat lawan melakukan tendangan sudut. Sebagai pemain pos tengah belakang, koordinasi gerakan apa yang paling tepat untuk mengantisipasi sundulan pemain lawan yang memiliki postur tinggi?",
+                options: { A: "Berdiri diam di garis gawang dan menunggu bola datang ke arah kepala", B: "Melakukan pressing ketat kepada penendang bola sudut di luar kotak penalti", C: "Mengambil posisi di depan penyerang lawan, melakukan lompatan eksplosif dengan timing tepat, dan menyapu bola keluar", D: "Menarik baju penyerang lawan agar tidak bisa melompat tinggi" },
+                answer: "C"
+            },
+            {
+                id: 3, type: 'mc',
+                text: "Seorang pemain bola voli melakukan teknik passing bawah dalam situasi darurat menerima spike keras dari lawan. Agar bola tidak melambung liar ke luar lapangan, sudut lengan dan dorongan kaki yang benar adalah...",
+                options: { A: "Lengan ditekuk 90 derajat di depan dada dan badan tegak lurus", B: "Lengan lurus membentuk bidang datar, siku dikunci, dan lutut sedikit mengeper menyerap tenaga bola", C: "Lengan diangkat ke atas kepala dengan telapak tangan terbuka menghadap bola", D: "Membawa badan condong ke belakang sambil mengayunkan lengan sekuat tenaga" },
+                answer: "B"
+            },
+            {
+                id: 4, type: 'mc',
+                text: "Dalam nomor lari estafet 4 x 100 meter, kegagalan penyerahan tongkat sering terjadi akibat ketidakcocokan kecepatan pelari pemberi dan penerima. Teknik visual yang efektif digunakan pada tingkat pemula adalah...",
+                options: { A: "Penerima melihat ke belakang saat menerima tongkat dari pemberi", B: "Penerima tidak boleh menoleh sama sekali dan mengandalkan aba-aba suara", C: "Penerima berlari sekencang-kencangnya tanpa memperdulikan posisi pemberi", D: "Tongkat dilempar kepada penerima dalam jarak 2 meter" },
+                answer: "A"
+            },
+            {
+                id: 5, type: 'mc',
+                text: "Pada cabang olahraga atletik nomor lompat jauh gaya menggantung (schnepper), posisi tubuh saat mencapai titik puncak parabola lompatan di udara yang benar adalah...",
+                options: { A: "Badan membungkuk ke depan dengan lutut ditarik menempel ke dada", B: "Dada membusung ke depan, kedua tangan diangkat ke atas, dan kaki digantung rileks ke belakang", C: "Berputar 180 derajat sebelum mendarat di bak pasir", D: "Menyilangkan kaki seperti sedang berjalan di udara" },
+                answer: "B"
+            },
+            {
+                id: 6, type: 'mc',
+                text: "Program latihan kebugaran jasmani untuk meningkatkan daya tahan aerobik (cardiorespiratory endurance) yang paling disarankan dengan metode interval training adalah...",
+                options: { A: "Lari sprint 100 meter dengan istirahat 5 detik sebanyak 50 kali", B: "Jogging konstan intensitas sedang diselingi lari cepat terstruktur dengan rasio kerja dan istirahat yang terukur", C: "Angkat beban maksimal 1 repetisi setiap 10 menit", D: "Berdiri tegak sambil mengatur napas dalam durasi 1 jam" },
+                answer: "B"
+            },
+            {
+                id: 7, type: 'mc',
+                text: "Untuk mengukur kekuatan dan daya tahan otot lengan serta bahu (muscle endurance) pada siswa usia remaja, tes fisik standar yang paling valid dilakukan adalah...",
+                options: { A: "Sit and reach test", B: "Lari bleep test (multi-stage fitness test)", C: "Push-up test selama 60 detik dengan teknik yang benar", D: "Lari cepat 50 meter" },
+                answer: "C"
+            },
+            {
+                id: 8, type: 'mc',
+                text: "Pentingnya melakukan pemanasan dinamis (dynamic stretching) sebelum memulai latihan inti olahraga berat adalah...",
+                options: { A: "Menurunkan detak jantung agar tubuh menjadi sangat rileks dan mengantuk", B: "Meningkatkan suhu tubuh, melumasi cairan sendi (synovial fluid), serta meningkatkan elastisitas otot", C: "Mencegah pertumbuhan otot agar tidak terlalu besar", D: "Menghabiskan waktu sebelum pertandingan dimulai" },
+                answer: "B"
+            },
+            {
+                id: 9, type: 'mc',
+                text: "Dalam menjaga kesehatan reproduksi remaja dan mencegah penyalahgunaan narkoba, zat adiktif golongan psikotropika sangat berbahaya karena merusak sistem...",
+                options: { A: "Pencernaan dan penyerapan sari makanan di usus", B: "Saraf pusat (otak) yang mengontrol kesadaran, emosi, dan koordinasi gerak", C: "Sistem ekskresi ginjal dalam menyaring darah", D: "Sistem pernapasan dan pertukaran oksigen" },
+                answer: "B"
+            },
+            {
+                id: 10, type: 'mc',
+                text: "Ketika seorang atlet mengalami kram otot betis secara mendadak saat berlari di lapangan, tindakan pertolongan pertama (P3K) olahraga yang paling tepat adalah...",
+                options: { A: "Memukul-mukul otot yang kram dengan benda keras agar lemas", B: "Melakukan peregangan pasif (passive stretching) pada otot betis secara perlahan dan memijat ringan", C: "Menyuruh atlet tersebut langsung melanjutkan lari sprint", D: "Merendam kaki dalam air mendidih" },
+                answer: "B"
+            },
+            {
+                id: 11, type: 'mc',
+                text: "Dalam permainan bola tangan (handball), seorang pemain penyerang melakukan lompatan tinggi (jump throw) untuk melewati blok lawan. Faktor biomekanika yang paling menentukan kekuatan lemparan adalah...",
+                options: { A: "Hanya mengandalkan kekuatan pergelangan tangan", B: "Koordinasi rotasi pinggul, tarikan otot dada, lecutan lengan, dan snap pergelangan tangan saat di udara", C: "Berat badan penyerang saat mendarat", D: "Sudut lemparan ke bawah sejajar lantai" },
+                answer: "B"
+            },
+            {
+                id: 12, type: 'mc',
+                text: "Teknik dasar dribbling dalam sepak bola menggunakan punggung kaki luar biasanya digunakan untuk...",
+                options: { A: "Melakukan lari cepat sambil mengubah arah dengan leluasa mengecoh lawan", B: "Menendang bola langsung ke gawang dari jarak jauh", C: "Menghentikan bola lambung dari udara", D: "Melakukan operan jarak jauh lambung" },
+                answer: "A"
+            },
+            {
+                id: 13, type: 'mc',
+                text: "Pada nomor tolak peluru gaya O'Brien (membelakangi arah lemparan), sumber tenaga utama saat melakukan eksplosi dorongan peluru berasal dari...",
+                options: { A: "Kekuatan jari-jari tangan", B: "Kekuatan dorongan kaki belakang, rotasi panggul, dan kekuatan otot torso (core)", C: "Ayunan tangan ke depan tanpa gerakan kaki", D: "Bahu bagian atas dan leher" },
+                answer: "B"
+            },
+            {
+                id: 14, type: 'mc',
+                text: "Komponen kebugaran jasmani yang berkaitan dengan kemampuan seseorang untuk mengubah arah posisi tubuh secara cepat dan tepat di ruang gerak tanpa kehilangan keseimbangan disebut...",
+                options: { A: "Kelentukan (Flexibility)", B: "Kelincahan (Agility)", C: "Daya Tahan (Endurance)", D: "Kekuatan (Strength)" },
+                answer: "B"
+            },
+            {
+                id: 15, type: 'mc',
+                text: "Makanan gizi seimbang bagi atlet remaja sebelum menghadapi pertandingan berat sebaiknya mengandung sumber energi utama yang mudah dicerna, yaitu...",
+                options: { A: "Lemak jenuh tinggi dan gorengan", B: "Karbohidrat kompleks (seperti nasi merah, havermut) dikonsumsi 2-3 jam sebelum bertanding", C: "Minuman bersoda berkafein tinggi", D: "Daging merah berlemak tebal" },
+                answer: "B"
+            },
+            {
+                id: 16, type: 'mc',
+                text: "Dalam permainan bulu tangkis, pukulan smash tajam dan keras memerlukan kombinasi teknik pegangan raket (grip) jenis...",
+                options: { A: "American grip", B: "Backhand grip", C: "Forehand grip (orthodox grip) dengan lecutan pergelangan tangan di titik kontak tertinggi", D: "Combination grip yang longgar" },
+                answer: "C"
+            },
+            {
+                id: 17, type: 'mc',
+                text: "Bahaya utama dari dehidrasi ringan selama melakukan aktivitas fisik intens di bawah terik matahari adalah...",
+                options: { A: "Peningkatan volume darah secara drastis", B: "Penurunan konsentrasi, kram otot, kelelahan dini, dan peningkatan suhu inti tubuh", C: "Pertumbuhan otot menjadi lebih cepat", D: "Peningkatan fleksibilitas persendian" },
+                answer: "B"
+            },
+            {
+                id: 18, type: 'mc',
+                text: "Prinsip latihan beban 'Progressive Overload' dalam kebugaran jasmani memiliki arti...",
+                options: { A: "Menambah beban latihan secara bertahap seiring meningkatnya kapasitas fisik tubuh", B: "Mengurangi porsi latihan setiap minggu agar tidak lelah", C: "Melakukan latihan yang sama persis seumur hidup", D: "Menghentikan latihan apabila sudah merasa sedikit berkeringat" },
+                answer: "A"
+            },
+            {
+                id: 19, type: 'mc',
+                text: "Pola penyerangan 4-2 dalam permainan bola voli mengindikasikan adanya komposisi pemain...",
+                options: { A: "4 pemain penyerang utama (smash) dan 2 pemain libero", B: "4 pemain spiker/attacker dan 2 pemain setter/tosser", C: "4 pemain blocker dan 2 pemain cadangan", D: "4 pemain belakang dan 2 pemain depan" },
+                answer: "B"
+            },
+            {
+                id: 20, type: 'mc',
+                text: "Langkah pemulihan (cooling down) setelah melakukan aktivitas fisik berat sangat penting untuk...",
+                options: { A: "Menjaga asam laktat menumpuk di otot dalam waktu lama", B: "Membantu penurunan detak jantung secara bertahap dan memperlancar pengembalian darah ke jantung (venous return)", C: "Membuat otot kaku dan kencang permanen", D: "Meningkatkan suhu tubuh secara drastis" },
+                answer: "B"
+            },
+
+            // --- PILIHAN BENAR / SALAH (21 - 30) ---
+            {
+                id: 21, type: 'tf',
+                text: "Dalam permainan bola basket, teknik pivot dilakukan dengan cara memutar badan ke segala arah dengan salah satu kaki sebagai poros sementara kaki lainnya melangkah bebas, asalkan kaki poros tidak bergeser dari tempatnya.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "A"
+            },
+            {
+                id: 22, type: 'tf',
+                text: "Latihan angkat berat (weight training) dengan intensitas tinggi tidak memerlukan waktu istirahat (recovery) otot, sehingga aman dilakukan setiap hari tanpa henti bagi pemula.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "B"
+            },
+            {
+                id: 23, type: 'tf',
+                text: "Prinsip R.I.C.E (Rest, Ice, Compression, Elevation) adalah protokol pertolongan pertama standar medis olahraga yang efektif untuk menangani cedera akut seperti sprain atau strain otot.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "A"
+            },
+            {
+                id: 24, type: 'tf',
+                text: "Pada nomor lari jarak pendek (sprint), posisi start jongkok (crouching start) digunakan untuk memaksimalkan dorongan awal tubuh ke depan saat aba-aba 'Ya' dibunyikan.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "A"
+            },
+            {
+                id: 25, type: 'tf',
+                text: "Merokok dan konsumsi minuman beralkohol tidak memberikan dampak negatif terhadap kapasitas paru-paru dan prestasi kebugaran jasmani seorang atlet remaja.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "B"
+            },
+            {
+                id: 26, type: 'tf',
+                text: "Tes bleep (multi-stage fitness test) merupakan instrumen pengukuran terstandar untuk memperkirakan kapasitas VO2Max seseorang melalui lari bolak-balik dengan peningkatan kecepatan bertahap.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "A"
+            },
+            {
+                id: 27, type: 'tf',
+                text: "Dalam permainan sepak bola, seorang pemain penyerang dinyatakan dalam posisi offside jika saat bola dioper oleh rekannya, posisinya berada lebih dekat ke garis gawang lawan daripada bola dan pemain bertahan terakhir.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "A"
+            },
+            {
+                id: 28, type: 'tf',
+                text: "Kelenturan (flexibility) sendi tidak dipengaruhi oleh usia dan jenis kelamin seseorang; setiap orang selalu memiliki tingkat kelenturan yang sama sejak lahir hingga tua.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "B"
+            },
+            {
+                id: 29, type: 'tf',
+                text: "Gaya dada (breaststroke) dalam renang sering juga disebut sebagai gaya katak karena gerakan kaki dan tangan menyerupai gerakan katak saat berenang di air.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "A"
+            },
+            {
+                id: 30, type: 'tf',
+                text: "Penyalahgunaan obat-obatan terlarang jenis doping di kalangan atlet profesional dianjurkan karena dapat mendongkrak prestasi secara instan tanpa efek samping kesehatan jangka panjang.",
+                options: { A: "Benar", B: "Salah" },
+                answer: "B"
+            },
+
+            // --- MENJODOHKAN (31 - 40) ---
+            {
+                id: 31, type: 'matching',
+                text: "Pasangkan istilah teknik gerak atau konsep kesehatan berikut dengan kategori yang paling sesuai.",
+                pairs: [
+                    { premise: "Sikap awal melompat jauh", match: "Awalan (Run-up) dengan kecepatan terkontrol" },
+                    { premise: "Pengukuran fleksibilitas tubuh", match: "Sit and Reach Test" },
+                    { premise: "Zat gizi sumber tenaga utama", match: "Karbohidrat Kompleks" },
+                    { premise: "Teknik mematikan bola di voli", match: "Smash / Spike" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 32, type: 'matching',
+                text: "Pasangkan jenis latihan fisik dengan komponen kebugaran jasmani yang dominan dilatih.",
+                pairs: [
+                    { premise: "Push-up dan Pull-up", match: "Kekuatan Otot (Strength)" },
+                    { premise: "Shutlle run (lari bolak-balik)", match: "Kelincahan (Agility)" },
+                    { premise: "Jogging jarak jauh konstan", match: "Daya Tahan Kardiorespirasi" },
+                    { premise: "Yoga dan peregangan statis", match: "Kelentukan (Flexibility)" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 33, type: 'matching',
+                text: "Pasangkan pelanggaran atau tindakan medis olahraga dengan penanganannya.",
+                pairs: [
+                    { premise: "Cedera lebam dengan bengkak akut", match: "Kompres Es (Cold Therapy)" },
+                    { premise: "Kekurangan cairan tubuh (dehidrasi)", match: "Rehidrasi Air dan Elektrolit" },
+                    { premise: "Pelanggaran keras di kotak penalti sepak bola", match: "Tendangan Penalti (Penalty Kick)" },
+                    { premise: "Pelanggaran melangkah berlebih di basket", match: "Traveling Violation" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 34, type: 'matching',
+                text: "Pasangkan nomor atletik dengan alat atau fasilitas perlengkapannya.",
+                pairs: [
+                    { premise: "Tolak Peluru", match: "Besi bulat padat (Shot)" },
+                    { premise: "Lompat Tinggi", match: "Matras tebal dan tiang mistar" },
+                    { premise: "Lari Gawang", match: "Rintangan gawang portabel" },
+                    { premise: "Lompat Jauh", match: "Bak pasir dan papan tumpuan" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 35, type: 'matching',
+                text: "Pasangkan posisi pemain dalam bola voli dengan tugas utamanya.",
+                pairs: [
+                    { premise: "Libero", match: "Spesialis bertahan dan penerima servis" },
+                    { premise: "Setter (Tosser)", match: "Pengatur umpan serangan" },
+                    { premise: "Smasher", match: "Pencetak poin utama lewat spike" },
+                    { premise: "Server", match: "Pemain yang melakukan servis pertama" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 36, type: 'matching',
+                text: "Pasangkan istilah kesehatan reproduksi dan bahaya narkotika dengan dampaknya.",
+                pairs: [
+                    { premise: "NAPZA golongan depresan", match: "Memperlambat fungsi sistem saraf" },
+                    { premise: "Pergaulan bebas remaja", match: "Risiko Infeksi Menular Seksual" },
+                    { premise: "Gizi buruk pada atlet", match: "Penurunan prestasi dan imunitas" },
+                    { premise: "Kurang tidur malam", match: "Gangguan pemulihan otot (recovery)" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 37, type: 'matching',
+                text: "Pasangkan teknik dasar permainan bola besar dengan jenis olahraganya.",
+                pairs: [
+                    { premise: "Dribbling, Passing, Shooting", match: "Sepak Bola / Bola Basket" },
+                    { premise: "Passing bawah, Passing atas, Smash", match: "Bola Voli" },
+                    { premise: "Lay-up shoot, Pivot, Rebound", match: "Bola Basket" },
+                    { premise: "Heading, Tackling, Corner kick", match: "Sepak Bola" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 38, type: 'matching',
+                text: "Pasangkan fase latihan dalam sesi olahraga dengan tujuannya.",
+                pairs: [
+                    { premise: "Pemanasan (Warm-up)", match: "Mencegah cedera & menaikkan suhu tubuh" },
+                    { premise: "Latihan Inti (Core Exercise)", match: "Mencapai tujuan utama latihan fisik" },
+                    { premise: "Pendinginan (Cooling down)", match: "Menurunkan detak jantung & hilangkan asam laktat" },
+                    { premise: "Evaluasi latihan", match: "Menilai ketercapaian program" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 39, type: 'matching',
+                text: "Pasangkan jenis gaya renang dengan ciri khas gerakannya.",
+                pairs: [
+                    { premise: "Gaya Bebas (Freestyle)", match: "Gerakan lengan bergantian dan rotasi napas samping" },
+                    { premise: "Gaya Dada (Breaststroke)", match: "Gerakan dada sejajar air mirip katak" },
+                    { premise: "Gaya Punggung (Backstroke)", match: "Posisi tubuh menghadap ke langit-langit air" },
+                    { premise: "Gaya Kupu-kupu (Butterfly)", match: "Gerakan kedua lengan bersamaan ke depan atas" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            },
+            {
+                id: 40, type: 'matching',
+                text: "Pasangkan alat ukur tes kebugaran dengan fungsi pengukurannya.",
+                pairs: [
+                    { premise: "Stopwatch", match: "Mengukur waktu tempuh lari" },
+                    { premise: "Meteran", match: "Mengukur jarak lompatan atau lemparan" },
+                    { premise: "Timbangan berat badan", match: "Mengukur massa tubuh" },
+                    { premise: "Skinfold caliper", match: "Mengukur ketebalan lemak subkutan" }
+                ],
+                answer: { 0: 0, 1: 1, 2: 2, 3: 3 }
+            }
+        ];
+
+        let questions = JSON.parse(localStorage.getItem(QUESTIONS_KEY)) || defaultQuestions;
+        let results = JSON.parse(localStorage.getItem(RESULTS_KEY)) || [];
+        let currentSession = JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
+
+        // --- UI Modal Functions ---
+        function showModal(title, message, iconClass = 'fa-info-circle', iconBg = 'bg-blue-100 text-blue-600', callback = null) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            const iconContainer = document.getElementById('modalIconContainer');
+            iconContainer.className = `w-12 h-12 rounded-full flex items-center justify-center text-xl ${iconBg}`;
+            document.getElementById('modalIcon').className = `fas ${iconClass}`;
+            
+            const actionsDiv = document.getElementById('modalActions');
+            if (callback) {
+                actionsDiv.innerHTML = `
+                    <button onclick="closeModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition-all">Batal</button>
+                    <button id="modalBtnConfirm" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-all">Ya, Lanjutkan</button>
+                `;
+                document.getElementById('modalBtnConfirm').onclick = () => {
+                    closeModal();
+                    callback();
+                };
+            } else {
+                actionsDiv.innerHTML = `<button onclick="closeModal()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-all">OK</button>`;
+            }
+
+            const modal = document.getElementById('customModal');
+            const box = document.getElementById('modalBox');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('customModal');
+            const box = document.getElementById('modalBox');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // --- Router / View Renderer ---
+        function render() {
+            const app = document.getElementById('app');
+            if (!currentSession) {
+                app.innerHTML = renderLoginView();
+            } else if (currentSession.role === 'admin') {
+                app.innerHTML = renderAdminDashboard();
+            } else if (currentSession.role === 'student_exam') {
+                app.innerHTML = renderStudentExamView();
+                initExamTimer();
+            } else if (currentSession.role === 'student_result') {
+                app.innerHTML = renderStudentResultView();
+            }
+        }
+
+        // --- 1. LOGIN VIEW ---
+        function renderLoginView() {
+            return `
+                <div class="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900">
+                    <div class="max-w-md w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 border border-white/20">
+                        <div class="text-center mb-8">
+                            <div class="w-16 h-16 bg-emerald-600 text-white rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-xl shadow-emerald-600/30 mb-4 font-bold">
+                                <i class="fas fa-running"></i>
+                            </div>
+                            <h1 class="text-2xl font-bold text-slate-900">Asesmen Sumatif PJOK</h1>
+                            <p class="text-xs text-emerald-700 font-semibold uppercase tracking-wider mt-1">${appConfig.schoolName} - ${appConfig.grade}</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Disusun oleh: ${appConfig.author}</p>
+                        </div>
+
+                        <!-- Tabs -->
+                        <div class="flex bg-slate-100 p-1.5 rounded-2xl mb-6">
+                            <button onclick="switchLoginTab('student')" id="tabStudentBtn" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-slate-800 shadow-sm">Siswa</button>
+                            <button onclick="switchLoginTab('admin')" id="tabAdminBtn" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-800">Guru / Admin</button>
+                        </div>
+
+                        <!-- Student Form -->
+                        <div id="studentForm" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Siswa</label>
+                                <input type="text" id="studentName" placeholder="Contoh: Ahmad Fauzan" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Kelas</label>
+                                <select id="studentClass" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <option value="Kelas 10 IPA">Kelas 10 IPA</option>
+                                    <option value="Kelas 10 IPS">Kelas 10 IPS</option>
+                                    <option value="Kelas 10 Agama">Kelas 10 Agama</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Presensi (Password Siswa)</label>
+                                <input type="password" id="studentPresensi" placeholder="Contoh: 15" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            </div>
+                            <button onclick="handleStudentLogin()" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2">
+                                <span>Mulai Ujian</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Admin Form -->
+                        <div id="adminForm" class="space-y-4 hidden">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Username Admin/Guru</label>
+                                <input type="text" id="adminUser" placeholder="Username admin" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Password Admin/Guru</label>
+                                <input type="password" id="adminPass" placeholder="Password admin" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            </div>
+                            <button onclick="handleAdminLogin()" class="w-full py-3.5 bg-teal-800 hover:bg-teal-900 text-white font-bold text-sm rounded-xl shadow-lg shadow-teal-900/30 transition-all flex items-center justify-center space-x-2">
+                                <span>Masuk Dashboard Admin</span>
+                                <i class="fas fa-lock"></i>
+                            </button>
+                            <div class="p-3 bg-teal-50 rounded-xl border border-teal-100 text-xs text-teal-800 flex items-start space-x-2">
+                                <i class="fas fa-info-circle mt-0.5"></i>
+                                <div>Default Admin: <b>admin</b> | Password: <b>password123</b> (Dapat diubah di panel admin).</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchLoginTab(type) {
+            const studentForm = document.getElementById('studentForm');
+            const adminForm = document.getElementById('adminForm');
+            const tabStudentBtn = document.getElementById('tabStudentBtn');
+            const tabAdminBtn = document.getElementById('tabAdminBtn');
+
+            if (type === 'student') {
+                studentForm.classList.remove('hidden');
+                adminForm.classList.add('hidden');
+                tabStudentBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-slate-800 shadow-sm";
+                tabAdminBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-800";
+            } else {
+                adminForm.classList.remove('hidden');
+                studentForm.classList.add('hidden');
+                tabAdminBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all bg-white text-slate-800 shadow-sm";
+                tabStudentBtn.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all text-slate-500 hover:text-slate-800";
+            }
+        }
+
+        function handleStudentLogin() {
+            const name = document.getElementById('studentName').value.trim();
+            const studentClass = document.getElementById('studentClass').value;
+            const presensi = document.getElementById('studentPresensi').value.trim();
+
+            if (!name || !presensi) {
+                showModal('Peringatan', 'Mohon lengkapi Nama Lengkap dan Nomor Presensi!', 'fa-exclamation-triangle', 'bg-amber-100 text-amber-600');
+                return;
+            }
+
+            // Check previous attempts
+            const studentAttempts = results.filter(r => r.name.toLowerCase() === name.toLowerCase() && r.presensi === presensi);
+            if (studentAttempts.length >= 2) {
+                showModal('Batas Maksimal Tercapai', 'Maaf, Anda telah menggunakan batas maksimal 2 kali kesempatan mengerjakan asesmen ini.', 'fa-ban', 'bg-rose-100 text-rose-600');
+                return;
+            }
+
+            currentSession = {
+                role: 'student_exam',
+                name: name,
+                class: studentClass,
+                presensi: presensi,
+                attemptNumber: studentAttempts.length + 1,
+                startTime: Date.now(),
+                answers: {}, // questionId -> answer
+                matchingAnswers: {} // questionId -> { premiseIndex: matchIndex }
+            };
+
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+            render();
+        }
+
+        function handleAdminLogin() {
+            const user = document.getElementById('adminUser').value.trim();
+            const pass = document.getElementById('adminPass').value.trim();
+
+            const savedAdmin = JSON.parse(localStorage.getItem('pjok_admin_creds')) || DEFAULT_ADMIN;
+
+            if (user === savedAdmin.username && pass === savedAdmin.password) {
+                currentSession = { role: 'admin' };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+                render();
+            } else {
+                showModal('Login Gagal', 'Username atau password admin salah!', 'fa-times-circle', 'bg-rose-100 text-rose-600');
+            }
+        }
+
+        function logout() {
+            showModal('Konfirmasi Keluar', 'Apakah Anda yakin ingin keluar sesi?', 'fa-question-circle', 'bg-blue-100 text-blue-600', () => {
+                currentSession = null;
+                localStorage.removeItem(SESSION_KEY);
+                render();
+            });
+        }
+
+
+        // --- 2. STUDENT EXAM VIEW ---
+        let examTimerInterval = null;
+
+        function renderStudentExamView() {
+            const totalDurationSec = appConfig.durationMinutes * 60;
+            const elapsedSec = Math.floor((Date.now() - currentSession.startTime) / 1000);
+            const remainingSec = Math.max(0, totalDurationSec - elapsedSec);
+
+            return `
+                <div class="flex flex-col min-h-screen bg-slate-100">
+                    <!-- Header -->
+                    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-4 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-bold">
+                                <i class="fas fa-running"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold text-slate-900">Asesmen Sumatif PJOK (${appConfig.grade})</h2>
+                                <p class="text-xs text-slate-500">Siswa: <b>${currentSession.name}</b> (${currentSession.class}) | Presensi: ${currentSession.presensi} | Percobaan ke-${currentSession.attemptNumber}/2</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center space-x-2 bg-rose-50 text-rose-700 px-4 py-2 rounded-xl border border-rose-200 font-mono font-bold text-sm">
+                                <i class="fas fa-clock animate-pulse"></i>
+                                <span id="timerDisplay">--:--</span>
+                            </div>
+                            <button onclick="confirmSubmitExam()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center space-x-2">
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Selesai & Kumpulkan</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Main Container -->
+                    <div class="max-w-5xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-4 gap-6 flex-grow">
+                        <!-- Questions Navigation Sidebar -->
+                        <div class="md:col-span-1 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 h-fit sticky top-24">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Daftar Soal (40 Soal)</h3>
+                            <div class="grid grid-cols-5 gap-2 max-h-[60vh] overflow-y-auto custom-scrollbar p-1">
+                                ${questions.map((q, idx) => {
+                                    const isAnswered = checkIsAnswered(q.id);
+                                    const btnClass = isAnswered 
+                                        ? "bg-emerald-600 text-white font-bold" 
+                                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold";
+                                    return `<button onclick="scrollToQuestion(${q.id})" id="navBtn_${q.id}" class="h-9 rounded-lg text-xs transition-all ${btnClass}">${idx + 1}</button>`;
+                                }).join('')}
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-slate-100 text-[11px] text-slate-500 space-y-1">
+                                <div class="flex items-center space-x-2"><span class="w-3 h-3 bg-emerald-600 rounded"><span>Terjawab</span></div>
+                                <div class="flex items-center space-x-2"><span class="w-3 h-3 bg-slate-100 border border-slate-300 rounded"><span>Belum Terjawab</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Questions Form Content -->
+                        <div class="md:col-span-3 space-y-6">
+                            ${questions.map((q, idx) => renderQuestionCard(q, idx)).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkIsAnswered(qId) {
+            const q = questions.find(item => item.id === qId);
+            if (!q) return false;
+            if (q.type === 'mc' || q.type === 'tf') {
+                return currentSession.answers[qId] !== undefined;
+            } else if (q.type === 'matching') {
+                const ans = currentSession.matchingAnswers[qId] || {};
+                return Object.keys(ans).length === q.pairs.length;
+            }
+            return false;
+        }
+
+        function renderQuestionCard(q, idx) {
+            let badgeText = q.type === 'mc' ? 'Pilihan Ganda (A, B, C, D)' : q.type === 'tf' ? 'Benar / Salah' : 'Menjodohkan';
+            let badgeColor = q.type === 'mc' ? 'bg-blue-50 text-blue-700 border-blue-200' : q.type === 'tf' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-amber-50 text-amber-700 border-amber-200';
+
+            let bodyContent = '';
+            if (q.type === 'mc') {
+                const currentAns = currentSession.answers[q.id] || '';
+                bodyContent = `
+                    <div class="space-y-3 mt-4">
+                        ${Object.entries(q.options).map(([key, val]) => `
+                            <label class="flex items-start space-x-3 p-3.5 rounded-xl border border-slate-200 hover:bg-emerald-50/50 hover:border-emerald-300 cursor-pointer transition-all ${currentAns === key ? 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-500' : 'bg-white'}">
+                                <input type="radio" name="q_${q.id}" value="${key}" ${currentAns === key ? 'checked' : ''} onchange="saveAnswer(${q.id}, '${key}')" class="mt-1 text-emerald-600 focus:ring-emerald-500">
+                                <span class="text-xs font-bold text-slate-700 w-5">${key}.</span>
+                                <span class="text-xs text-slate-700 leading-relaxed">${val}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (q.type === 'tf') {
+                const currentAns = currentSession.answers[q.id] || '';
+                bodyContent = `
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <label class="flex items-center justify-center space-x-2 p-4 rounded-xl border border-slate-200 hover:bg-emerald-50 cursor-pointer transition-all ${currentAns === 'Benar' ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold' : 'bg-white text-slate-700'}">
+                            <input type="radio" name="q_${q.id}" value="Benar" ${currentAns === 'Benar' ? 'checked' : ''} onchange="saveAnswer(${q.id}, 'Benar')" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-sm">Benar</span>
+                        </label>
+                        <label class="flex items-center justify-center space-x-2 p-4 rounded-xl border border-slate-200 hover:bg-emerald-50 cursor-pointer transition-all ${currentAns === 'Salah' ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold' : 'bg-white text-slate-700'}">
+                            <input type="radio" name="q_${q.id}" value="Salah" ${currentAns === 'Salah' ? 'checked' : ''} onchange="saveAnswer(${q.id}, 'Salah')" class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-sm">Salah</span>
+                        </label>
+                    </div>
+                `;
+            } else if (q.type === 'matching') {
+                const userMatch = currentSession.matchingAnswers[q.id] || {};
+                // Shuffle matches for display
+                const matchesList = q.pairs.map(p => p.match);
+                
+                bodyContent = `
+                    <div class="space-y-3 mt-4">
+                        <p class="text-xs text-slate-500 italic mb-2">Pasangkan pernyataan di sebelah kiri dengan pilihan yang tepat di sebelah kanan:</p>
+                        ${q.pairs.map((pair, pIdx) => `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 items-center">
+                                <div class="text-xs font-semibold text-slate-700"><b>${pIdx + 1}.</b> ${pair.premise}</div>
+                                <div>
+                                    <select onchange="saveMatchingAnswer(${q.id}, ${pIdx}, this.value)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500">
+                                        <option value="">-- Pilih Pasangan --</option>
+                                        ${matchesList.map((mVal, mIdx) => `
+                                            <option value="${mIdx}" ${userMatch[pIdx] == mIdx ? 'selected' : ''}>${mVal}</option>
+                                        `).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            return `
+                <div id="question_card_${q.id}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="px-3 py-1 text-[11px] font-bold rounded-lg border ${badgeColor}">Soal No. ${idx + 1} (${badgeText})</span>
+                    </div>
+                    <p class="text-sm font-medium text-slate-800 leading-relaxed">${q.text}</p>
+                    ${bodyContent}
+                </div>
+            `;
+        }
+
+        function saveAnswer(qId, val) {
+            currentSession.answers[qId] = val;
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+            updateNavButtonState(qId);
+        }
+
+        function saveMatchingAnswer(qId, premiseIdx, matchIdx) {
+            if (!currentSession.matchingAnswers[qId]) {
+                currentSession.matchingAnswers[qId] = {};
+            }
+            currentSession.matchingAnswers[qId][premiseIdx] = parseInt(matchIdx);
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+            updateNavButtonState(qId);
+        }
+
+        function updateNavButtonState(qId) {
+            const btn = document.getElementById(`navBtn_${qId}`);
+            if (btn && checkIsAnswered(qId)) {
+                btn.className = "h-9 rounded-lg text-xs transition-all bg-emerald-600 text-white font-bold";
+            }
+        }
+
+        function scrollToQuestion(qId) {
+            const el = document.getElementById(`question_card_${qId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function initExamTimer() {
+            if (examTimerInterval) clearInterval(examTimerInterval);
+            
+            examTimerInterval = setInterval(() => {
+                const totalDurationSec = appConfig.durationMinutes * 60;
+                const elapsedSec = Math.floor((Date.now() - currentSession.startTime) / 1000);
+                const remainingSec = totalDurationSec - elapsedSec;
+
+                if (remainingSec <= 0) {
+                    clearInterval(examTimerInterval);
+                    autoSubmitExam();
+                    return;
+                }
+
+                const m = Math.floor(remainingSec / 60);
+                const s = remainingSec % 60;
+                const display = document.getElementById('timerDisplay');
+                if (display) {
+                    display.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function confirmSubmitExam() {
+            showModal('Konfirmasi Pengumpulan', 'Apakah Anda yakin ingin menyelesaikan dan mengumpulkan jawaban ujian ini?', 'fa-question-circle', 'bg-emerald-100 text-emerald-600', () => {
+                submitExam();
+            });
+        }
+
+        function autoSubmitExam() {
+            showModal('Waktu Habis', 'Waktu pengerjaan asesmen telah habis. Sistem akan mengumpulkan jawaban Anda secara otomatis.', 'fa-hourglass-end', 'bg-amber-100 text-amber-600', () => {
+                submitExam();
+            });
+        }
+
+        function submitExam() {
+            if (examTimerInterval) clearInterval(examTimerInterval);
+
+            // Calculate Score
+            let correctCount = 0;
+            let totalQuestionsCount = questions.length;
+
+            questions.forEach(q => {
+                if (q.type === 'mc' || q.type === 'tf') {
+                    if (currentSession.answers[q.id] === q.answer) {
+                        correctCount++;
+                    }
+                } else if (q.type === 'matching') {
+                    const userM = currentSession.matchingAnswers[q.id] || {};
+                    let allCorrect = true;
+                    q.pairs.forEach((p, pIdx) => {
+                        if (userM[pIdx] !== q.answer[pIdx]) {
+                            allCorrect = false;
+                        }
+                    });
+                    if (allCorrect && Object.keys(userM).length === q.pairs.length) {
+                        correctCount++;
+                    }
+                }
+            });
+
+            // Score out of 100
+            const finalScore = Math.round((correctCount / totalQuestionsCount) * 100);
+            const isPassed = finalScore >= appConfig.kkm;
+
+            const resultRecord = {
+                id: crypto.randomUUID ? crypto.randomUUID() : 'res_' + Date.now(),
+                name: currentSession.name,
+                class: currentSession.class,
+                presensi: currentSession.presensi,
+                attemptNumber: currentSession.attemptNumber,
+                correctCount: correctCount,
+                totalQuestions: totalQuestionsCount,
+                score: finalScore,
+                kkm: appConfig.kkm,
+                status: isPassed ? 'Lulus / Tuntas' : 'Belum Tuntas (Remedial)',
+                submittedAt: new Date().toISOString()
+            };
+
+            results.push(resultRecord);
+            localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+
+            currentSession.role = 'student_result';
+            currentSession.lastResult = resultRecord;
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+            render();
+        }
+
+
+        // --- 3. STUDENT RESULT VIEW ---
+        function renderStudentResultView() {
+            const res = currentSession.lastResult;
+            const isPassed = res.score >= appConfig.kkm;
+
+            return `
+                <div class="flex-grow flex items-center justify-center p-6 bg-slate-100">
+                    <div class="max-w-xl w-full bg-white rounded-3xl shadow-2xl p-8 border border-slate-200 text-center">
+                        <div class="w-20 h-20 rounded-full mx-auto flex items-center justify-center text-3xl mb-4 shadow-xl ${isPassed ? 'bg-emerald-100 text-emerald-600 shadow-emerald-600/20' : 'bg-rose-100 text-rose-600 shadow-rose-600/20'}">
+                            <i class="fas ${isPassed ? 'fa-award' : 'fa-exclamation-triangle'}"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-900">Hasil Asesmen Sumatif PJOK</h2>
+                        <p class="text-xs text-slate-500 mt-1">${appConfig.schoolName} - ${appConfig.grade}</p>
+
+                        <div class="my-6 p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-left">
+                            <div class="flex justify-between text-xs"><span class="text-slate-500">Nama Siswa:</span><span class="font-bold text-slate-800">${res.name}</span></div>
+                            <div class="flex justify-between text-xs"><span class="text-slate-500">Kelas / Presensi:</span><span class="font-bold text-slate-800">${res.class} / ${res.presensi}</span></div>
+                            <div class="flex justify-between text-xs"><span class="text-slate-500">Percobaan ke-:</span><span class="font-bold text-slate-800">${res.attemptNumber} dari 2</span></div>
+                            <div class="flex justify-between text-xs"><span class="text-slate-500">Jawaban Benar:</span><span class="font-bold text-emerald-600">${res.correctCount} dari ${res.totalQuestions} Soal</span></div>
+                            <div class="flex justify-between text-xs"><span class="text-slate-500">KKM Standar:</span><span class="font-bold text-slate-800">${res.kkm}</span></div>
+                            <div class="pt-3 border-t border-slate-200 flex justify-between items-center">
+                                <span class="text-sm font-bold text-slate-700">Nilai Akhir:</span>
+                                <span class="text-3xl font-black ${isPassed ? 'text-emerald-600' : 'text-rose-600'}">${res.score}</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-2">
+                                <span class="text-xs font-semibold text-slate-500">Status Kelulusan:</span>
+                                <span class="px-3 py-1 text-xs font-bold rounded-lg ${isPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${res.status}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-3">
+                            <button onclick="downloadScoreCard()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2">
+                                <i class="fas fa-download"></i>
+                                <span>Download / Cetak Nilai</span>
+                            </button>
+                            <button onclick="logout()" class="px-5 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-all">
+                                Keluar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function downloadScoreCard() {
+            window.print();
+        }
+
+
+        // --- 4. ADMIN DASHBOARD VIEW ---
+        let adminActiveTab = 'results'; // 'results', 'questions', 'settings'
+
+        function renderAdminDashboard() {
+            return `
+                <div class="flex flex-col min-h-screen bg-slate-100">
+                    <!-- Admin Header -->
+                    <header class="bg-teal-900 text-white px-6 py-4 flex items-center justify-between shadow-lg">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center font-bold">
+                                <i class="fas fa-user-shield"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold">Dashboard Guru / Admin PJOK</h2>
+                                <p class="text-[11px] text-teal-200">${appConfig.schoolName} - ${appConfig.grade}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="testExamAsStudent()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2">
+                                <i class="fas fa-play-circle"></i>
+                                <span>Uji Coba Soal (Siswa)</span>
+                            </button>
+                            <button onclick="logout()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Keluar</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Admin Sub-Navigation -->
+                    <div class="bg-white border-b border-slate-200 px-6 py-3 flex space-x-3 shadow-sm">
+                        <button onclick="switchAdminTab('results')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all ${adminActiveTab === 'results' ? 'bg-teal-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="fas fa-chart-bar mr-1.5"></i> Hasil Nilai Siswa
+                        </button>
+                        <button onclick="switchAdminTab('questions')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all ${adminActiveTab === 'questions' ? 'bg-teal-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="fas fa-question-circle mr-1.5"></i> Bank Soal (${questions.length} Soal)
+                        </button>
+                        <button onclick="switchAdminTab('settings')" class="px-4 py-2 text-xs font-bold rounded-xl transition-all ${adminActiveTab === 'settings' ? 'bg-teal-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="fas fa-cog mr-1.5"></i> Pengaturan & Password
+                        </button>
+                    </div>
+
+                    <!-- Admin Content Area -->
+                    <main class="max-w-6xl w-full mx-auto p-6 flex-grow">
+                        ${adminActiveTab === 'results' ? renderAdminResultsTab() : adminActiveTab === 'questions' ? renderAdminQuestionsTab() : renderAdminSettingsTab()}
+                    </main>
+                </div>
+            `;
+        }
+
+        function switchAdminTab(tab) {
+            adminActiveTab = tab;
+            render();
+        }
+
+        function renderAdminResultsTab() {
+            return `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Daftar Rekap Nilai Siswa</h3>
+                            <p class="text-xs text-slate-500">Total siswa mengerjakan: ${results.length}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="exportResultsCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition-all">
+                                <i class="fas fa-file-excel mr-1"></i> Export CSV
+                            </button>
+                            <button onclick="clearAllResults()" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-all">
+                                <i class="fas fa-trash mr-1"></i> Reset Nilai
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 text-xs uppercase border-b border-slate-200">
+                                    <th class="p-3">No</th>
+                                    <th class="p-3">Nama Siswa</th>
+                                    <th class="p-3">Kelas</th>
+                                    <th class="p-3">Presensi</th>
+                                    <th class="p-3">Percobaan</th>
+                                    <th class="p-3">Benar</th>
+                                    <th class="p-3">Nilai</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Waktu</th>
+                                    <th class="p-3 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-xs">
+                                ${results.length === 0 ? `
+                                    <tr><td colspan="10" class="p-6 text-center text-slate-400 italic">Belum ada data siswa yang mengerjakan asesmen.</td></tr>
+                                ` : results.map((r, idx) => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3 text-slate-500 font-semibold">${idx + 1}</td>
+                                        <td class="p-3 font-bold text-slate-800">${r.name}</td>
+                                        <td class="p-3 text-slate-600">${r.class}</td>
+                                        <td class="p-3 text-slate-600">${r.presensi}</td>
+                                        <td class="p-3 text-slate-600">Ke-${r.attemptNumber}</td>
+                                        <td class="p-3 text-emerald-600 font-bold">${r.correctCount}/${r.totalQuestions}</td>
+                                        <td class="p-3 font-black text-slate-900">${r.score}</td>
+                                        <td class="p-3"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold ${r.score >= appConfig.kkm ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${r.status}</span></td>
+                                        <td class="p-3 text-slate-400">${new Date(r.submittedAt).toLocaleString()}</td>
+                                        <td class="p-3 text-right">
+                                            <button onclick="deleteResult('${r.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-all" title="Hapus Data">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminQuestionsTab() {
+            return `
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800">Manajemen Bank Soal Asesmen</h3>
+                            <p class="text-xs text-slate-500">Anda dapat menambah, mengedit pertanyaan, atau mengubah kunci jawaban.</p>
+                        </div>
+                        <button onclick="openAddQuestionModal()" class="px-4 py-2.5 bg-teal-900 hover:bg-teal-800 text-white text-xs font-bold rounded-xl shadow transition-all flex items-center space-x-2">
+                            <i class="fas fa-plus"></i>
+                            <span>Tambah Soal Baru</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${questions.map((q, idx) => `
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div class="space-y-2 flex-grow">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="px-2.5 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-700">Soal #${idx + 1}</span>
+                                        <span class="px-2.5 py-0.5 text-[10px] font-bold rounded ${q.type === 'mc' ? 'bg-blue-100 text-blue-800' : q.type === 'tf' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}">${q.type.toUpperCase()}</span>
+                                    </div>
+                                    <p class="text-xs font-medium text-slate-800 leading-relaxed">${q.text}</p>
+                                    <p class="text-[11px] text-emerald-700 font-semibold">Kunci Jawaban: ${JSON.stringify(q.answer)}</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="openEditQuestionModal(${q.id})" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">Edit</button>
+                                    <button onclick="deleteQuestion(${q.id})" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-lg transition-all">Hapus</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAdminSettingsTab() {
+            const savedAdmin = JSON.parse(localStorage.getItem('pjok_admin_creds')) || DEFAULT_ADMIN;
+            return `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-xl mx-auto space-y-6">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Pengaturan Aplikasi & Kredensial Admin</h3>
+                        <p class="text-xs text-slate-500">Sesuaikan parameter asesmen dan ubah password admin di sini.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Nama Sekolah</label>
+                            <input type="text" id="settingSchool" value="${appConfig.schoolName}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Nama Guru / Pembuat Soal</label>
+                            <input type="text" id="settingAuthor" value="${appConfig.author}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Durasi Ujian (Menit)</label>
+                                <input type="number" id="settingDuration" value="${appConfig.durationMinutes}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nilai KKM</label>
+                                <input type="number" id="settingKkm" value="${appConfig.kkm}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-100 my-4">
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Username Admin Baru</label>
+                            <input type="text" id="settingAdminUser" value="${savedAdmin.username}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Password Admin Baru</label>
+                            <input type="password" id="settingAdminPass" placeholder="Kosongkan jika tidak diubah" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        </div>
+
+                        <button onclick="saveAppSettings()" class="w-full py-3 bg-teal-900 hover:bg-teal-800 text-white font-bold text-xs rounded-xl shadow transition-all">
+                            Simpan Perubahan Pengaturan
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveAppSettings() {
+            appConfig.schoolName = document.getElementById('settingSchool').value.trim() || appConfig.schoolName;
+            appConfig.author = document.getElementById('settingAuthor').value.trim() || appConfig.author;
+            appConfig.durationMinutes = parseInt(document.getElementById('settingDuration').value) || 90;
+            appConfig.kkm = parseInt(document.getElementById('settingKkm').value) || 78;
+
+            localStorage.setItem(APP_CONFIG_KEY, JSON.stringify(appConfig));
+
+            const newAdminUser = document.getElementById('settingAdminUser').value.trim();
+            const newAdminPass = document.getElementById('settingAdminPass').value.trim();
+            if (newAdminUser) {
+                const creds = { username: newAdminUser, password: newAdminPass || DEFAULT_ADMIN.password };
+                localStorage.setItem('pjok_admin_creds', JSON.stringify(creds));
+            }
+
+            showModal('Berhasil', 'Pengaturan aplikasi berhasil disimpan!', 'fa-check-circle', 'bg-emerald-100 text-emerald-600');
+            render();
+        }
+
+        function testExamAsStudent() {
+            currentSession = {
+                role: 'student_exam',
+                name: 'Uji Coba Guru / Admin',
+                class: 'Kelas 10 IPA',
+                presensi: '99',
+                attemptNumber: 1,
+                startTime: Date.now(),
+                answers: {},
+                matchingAnswers: {}
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentSession));
+            render();
+        }
+
+        function deleteResult(id) {
+            showModal('Hapus Nilai', 'Apakah Anda yakin ingin menghapus data hasil siswa ini?', 'fa-question-circle', 'bg-rose-100 text-rose-600', () => {
+                results = results.filter(r => r.id !== id);
+                localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+                render();
+            });
+        }
+
+        function clearAllResults() {
+            showModal('Reset Semua Nilai', 'Apakah Anda yakin ingin menghapus seluruh rekap nilai siswa?', 'fa-exclamation-triangle', 'bg-rose-100 text-rose-600', () => {
+                results = [];
+                localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+                render();
+            });
+        }
+
+        function exportResultsCSV() {
+            if (results.length === 0) {
+                showModal('Kosong', 'Belum ada data untuk diexport.', 'fa-info-circle', 'bg-amber-100 text-amber-600');
+                return;
+            }
+
+            let csv = 'No,Nama Siswa,Kelas,Presensi,Percobaan,Benar,Total,Nilai,Status,Waktu\n';
+            results.forEach((r, idx) => {
+                csv += `${idx + 1},"${r.name}","${r.class}",${r.presensi},${r.attemptNumber},${r.correctCount},${r.totalQuestions},${r.score},"${r.status}","${r.submittedAt}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Rekap_Nilai_PJOK_Kelas10_${Date.now()}.csv`;
+            a.click();
+        }
+
+        function deleteQuestion(id) {
+            showModal('Hapus Soal', 'Apakah Anda yakin ingin menghapus soal ini?', 'fa-question-circle', 'bg-rose-100 text-rose-600', () => {
+                questions = questions.filter(q => q.id !== id);
+                localStorage.setItem(QUESTIONS_KEY, JSON.stringify(questions));
+                render();
+            });
+        }
+
+        function openAddQuestionModal() {
+            // Simple prompt/modal handler or inline form - let's add a quick question via prompt simulation or modal
+            const text = prompt("Masukkan teks soal baru:");
+            if (!text) return;
+            const type = prompt("Tipe soal (mc / tf):", "mc");
+            if (!type) return;
+
+            if (type === 'mc') {
+                const optA = prompt("Opsi A:", "Pilihan A");
+                const optB = prompt("Opsi B:", "Pilihan B");
+                const optC = prompt("Opsi C:", "Pilihan C");
+                const optD = prompt("Opsi D:", "Pilihan D");
+                const ans = prompt("Kunci jawaban (A/B/C/D):", "A");
+
+                const newQ = {
+                    id: Date.now(),
+                    type: 'mc',
+                    text: text,
+                    options: { A: optA, B: optB, C: optC, D: optD },
+                    answer: ans.toUpperCase()
+                };
+                questions.push(newQ);
+                localStorage.setItem(QUESTIONS_KEY, JSON.stringify(questions));
+                render();
+            } else if (type === 'tf') {
+                const ans = prompt("Kunci jawaban (Benar/Salah):", "Benar");
+                const newQ = {
+                    id: Date.now(),
+                    type: 'tf',
+                    text: text,
+                    options: { A: "Benar", B: "Salah" },
+                    answer: ans
+                };
+                questions.push(newQ);
+                localStorage.setItem(QUESTIONS_KEY, JSON.stringify(questions));
+                render();
+            }
+        }
+
+        function openEditQuestionModal(id) {
+            const q = questions.find(item => item.id === id);
+            if (!q) return;
+            const newText = prompt("Edit teks soal:", q.text);
+            if (newText) q.text = newText;
+            if (q.type !== 'matching') {
+                const newAns = prompt("Edit kunci jawaban:", q.answer);
+                if (newAns) q.answer = newAns;
+            }
+            localStorage.setItem(QUESTIONS_KEY, JSON.stringify(questions));
+            render();
+        }
+
+        // --- Initialization ---
+        window.onload = function() {
+            render();
+        };
+    </script>
+</body>
+</html>
